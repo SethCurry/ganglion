@@ -4,7 +4,7 @@ interface Frontmatter {
   [key: string]: any;
 }
 
-interface SplitFrontmatterResult<T> {
+export interface SplitFrontmatterResult<T> {
   frontmatter: T;
   content: string;
 }

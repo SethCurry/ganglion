@@ -2,8 +2,11 @@ import type {
   ExtensionAPI,
   ExtensionCommandContext,
 } from "@mariozechner/pi-coding-agent";
-import { Type } from "@sinclair/typebox";
 import fs from "fs";
+import {
+  parseFrontMatterFromFile,
+  type SplitFrontmatterResult,
+} from "../lib/frontmatter.ts";
 
 function getProfileDirectory() {
   return fs.realpathSync(process.env.HOME + "/.pi/profiles");
@@ -13,10 +16,10 @@ async function listProfiles() {
   const profileDir = getProfileDirectory();
   const profiles = fs.readdirSync(profileDir);
   return profiles
-    .filter((profile) => profile.endsWith(".json"))
+    .filter((profile) => profile.endsWith(".md"))
     .map((profile) => {
       return {
-        name: profile.replace(".json", ""),
+        name: profile.replace(".md", ""),
         path: profileDir + "/" + profile,
       };
     });
@@ -61,11 +64,14 @@ function getModelProvider(modelId: string) {
 
 function getProfile(name: string) {
   const profileDir = getProfileDirectory();
-  const profile = fs.readFileSync(profileDir + "/" + name + ".json", "utf8");
-  return JSON.parse(profile) as Profile;
+  const profileFile = profileDir + "/" + name + ".md";
+  const profile = parseFrontMatterFromFile<Profile>(profileFile);
+  return profile;
 }
 
 export default function (pi: ExtensionAPI) {
+  var activeProfile: SplitFrontmatterResult<Profile> | null = null;
+
   pi.registerCommand("list_profiles", {
     handler: async (args: string, ctx: ExtensionCommandContext) => {
       const profiles = await listProfiles();
@@ -75,6 +81,12 @@ export default function (pi: ExtensionAPI) {
       });
       ctx.ui.notify(message, "info");
     },
+  });
+
+  pi.on("before_agent_start", async (ctx) => {
+    if (activeProfile) {
+      return { systemPrompt: activeProfile.content };
+    }
   });
 
   pi.registerCommand("active-tools", {
@@ -117,7 +129,9 @@ export default function (pi: ExtensionAPI) {
           return;
         }
       }
-      const profile = getProfile(profileName);
+      const parsedProfile = getProfile(profileName);
+      activeProfile = parsedProfile;
+      const profile = parsedProfile.frontmatter;
 
       const messages: string[] = [];
 
@@ -137,6 +151,12 @@ export default function (pi: ExtensionAPI) {
       if (profile.tools) {
         pi.setActiveTools(profile.tools);
         messages.push(`Set active tools: ${profile.tools.join(", ")}`);
+      }
+
+      if (parsedProfile.content && parsedProfile.content.trim() !== "") {
+        await ctx.newSession({
+          parentSession: ctx.sessionManager.getSessionId(),
+        });
       }
 
       ctx.ui.notify(messages.join("\n"), "info");
