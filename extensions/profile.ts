@@ -6,7 +6,7 @@ import { Type } from "@sinclair/typebox";
 import fs from "fs";
 
 function getProfileDirectory() {
-  return fs.realpathSync(__dirname + "/../profiles");
+  return fs.realpathSync(process.env.HOME + "/.pi/profiles");
 }
 
 async function listProfiles() {
