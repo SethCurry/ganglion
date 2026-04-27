@@ -1,0 +1,35 @@
+{
+  "name": "ganglion",
+  "version": "0.0.1",
+  "description": "My Pi coding agent package",
+  "main": "index.js",
+  "repository": "https://github.com/SethCurry/ganglion",
+  "author": "Seth Curry <seth@scurry.io>",
+  "license": "MIT",
+  "private": false,
+  "keywords": [
+    "pi-package"
+  ],
+  "type": "module",
+  "pi": {
+    "extensions": [
+      "./extensions"
+    ],
+    "skills": [
+      "./skills"
+    ],
+    "prompts": [
+      "./prompts"
+    ],
+    "themes": [
+      "./themes"
+    ]
+  },
+  "dependencies": {
+    "@mariozechner/pi-coding-agent": "^0.70.2",
+    "@sinclair/typebox": "^0.34.49"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0"
+  }
+}
