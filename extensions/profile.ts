@@ -135,6 +135,12 @@ export default function (pi: ExtensionAPI) {
 
       const messages: string[] = [];
 
+      if (parsedProfile.content && parsedProfile.content.trim() !== "") {
+        await ctx.newSession({
+          parentSession: ctx.sessionManager.getSessionId(),
+        });
+      }
+
       if (profile.model) {
         const allModels = ctx.modelRegistry.getAll();
 
@@ -151,12 +157,6 @@ export default function (pi: ExtensionAPI) {
       if (profile.tools) {
         pi.setActiveTools(profile.tools);
         messages.push(`Set active tools: ${profile.tools.join(", ")}`);
-      }
-
-      if (parsedProfile.content && parsedProfile.content.trim() !== "") {
-        await ctx.newSession({
-          parentSession: ctx.sessionManager.getSessionId(),
-        });
       }
 
       ctx.ui.notify(messages.join("\n"), "info");
