@@ -69,6 +69,24 @@ function getProfile(name: string) {
   return profile;
 }
 
+function extractDynamicTail(builtPrompt: string): string {
+  const markers = [
+    "\nPi documentation (read only when the user asks about pi itself",
+    "\n\n# Project Context\n",
+    "\n\nThe following skills provide specialized instructions",
+    "\nCurrent date: ",
+  ];
+  let splitIndex = builtPrompt.length;
+  for (const marker of markers) {
+    const idx = builtPrompt.indexOf(marker);
+    if (idx !== -1 && idx < splitIndex) splitIndex = idx;
+  }
+  if (splitIndex < builtPrompt.length) return builtPrompt.slice(splitIndex);
+  const date = new Date().toISOString().slice(0, 10);
+  const cwd = process.cwd().replace(/\\/g, "/");
+  return `\nCurrent date: ${date}\nCurrent working directory: ${cwd}`;
+}
+
 export default function (pi: ExtensionAPI) {
   var activeProfile: SplitFrontmatterResult<Profile> | null = null;
 
@@ -85,7 +103,9 @@ export default function (pi: ExtensionAPI) {
 
   pi.on("before_agent_start", async (ctx) => {
     if (activeProfile) {
-      return { systemPrompt: activeProfile.content };
+      const dynamicTail = extractDynamicTail(ctx.systemPrompt);
+
+      return { systemPrompt: activeProfile.content + dynamicTail };
     }
   });
 
