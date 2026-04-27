@@ -105,7 +105,11 @@ export default function (pi: ExtensionAPI) {
     if (activeProfile) {
       const dynamicTail = extractDynamicTail(ctx.systemPrompt);
 
-      return { systemPrompt: activeProfile.content + dynamicTail };
+      const fullPrompt = activeProfile.content + dynamicTail;
+
+      console.log(fullPrompt);
+
+      return { systemPrompt: fullPrompt };
     }
   });
 
