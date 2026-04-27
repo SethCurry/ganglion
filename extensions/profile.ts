@@ -102,7 +102,7 @@ export default function (pi: ExtensionAPI) {
   });
 
   pi.on("before_agent_start", async (ctx) => {
-    if (activeProfile) {
+    if (activeProfile !== null) {
       const dynamicTail = extractDynamicTail(ctx.systemPrompt);
 
       const fullPrompt = activeProfile.content + dynamicTail;
