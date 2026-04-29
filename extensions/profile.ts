@@ -115,6 +115,12 @@ export default function (pi: ExtensionAPI) {
     return { systemPrompt: ctx.systemPrompt };
   });
 
+  pi.registerCommand("system-prompt", {
+    handler: async (args: string, ctx: ExtensionCommandContext) => {
+      ctx.ui.notify(ctx.getSystemPrompt(), "info");
+    },
+  });
+
   pi.registerCommand("active-tools", {
     handler: async (args: string, ctx: ExtensionCommandContext) => {
       const tools = pi.getActiveTools();
@@ -158,7 +164,6 @@ export default function (pi: ExtensionAPI) {
       const parsedProfile = getProfile(profileName);
       activeProfile = parsedProfile;
       const profile = parsedProfile.frontmatter;
-      console.log(profile);
 
       const messages: string[] = [];
 

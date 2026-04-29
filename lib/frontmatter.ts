@@ -12,17 +12,24 @@ export interface SplitFrontmatterResult<T> {
 export function splitFrontmatter<T>(
   content: string,
 ): SplitFrontmatterResult<T> {
-  const frontmatterRegex = /^---\n(.*?)\n---\n/;
-  const frontmatterMatch = content.match(frontmatterRegex);
-  if (frontmatterMatch) {
-    return {
-      frontmatter: JSON.parse(frontmatterMatch[1]!) as T,
-      content: content.replace(frontmatterRegex, ""),
-    };
+  var inFrontmatter = false;
+  var frontmatterContent = "";
+  var systemPrompt = "";
+
+  for (const line of content.split("\n")) {
+    if (line.trim() === "---") {
+      inFrontmatter = !inFrontmatter;
+      continue;
+    }
+    if (inFrontmatter) {
+      frontmatterContent += line + "\n";
+    } else {
+      systemPrompt += line + "\n";
+    }
   }
   return {
-    frontmatter: {} as T,
-    content: content,
+    frontmatter: JSON.parse(frontmatterContent) as T,
+    content: systemPrompt,
   };
 }
 
