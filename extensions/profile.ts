@@ -107,8 +107,6 @@ export default function (pi: ExtensionAPI) {
 
       const fullPrompt = activeProfile.content + dynamicTail;
 
-      console.log(fullPrompt);
-
       return { systemPrompt: fullPrompt };
     }
 

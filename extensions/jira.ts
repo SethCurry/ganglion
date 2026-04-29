@@ -130,6 +130,46 @@ export default function (pi: ExtensionAPI) {
     },
   });
 
+  pi.registerTool({
+    name: "jira_issues_in_epic",
+    label: "Jira Issues in Epic",
+    description: "Search for Jira issues in a particular Epic.",
+    parameters: Type.Object({
+      epic: Type.String({
+        description: "The Jira key of the Epic to search for issues in.",
+      }),
+    }),
+    async execute(toolCallId, params, signal, onUpdate, ctx) {
+      const jiraUrl = process.env.JIRA_URL;
+      const searchParams = {
+        jql: `parent = ${params.epic}`,
+        fields: ["key", "summary"],
+      };
+      const response = await fetch(`${jiraUrl}/rest/api/3/search/jql`, {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify(searchParams),
+      });
+      const data = await response.json();
+      return {
+        content: [
+          {
+            type: "text",
+            text:
+              "Jira Issues:\n" +
+              data.issues
+                .map(
+                  (issue: any) =>
+                    `<issue>\n\t<key>${issue.key}</key>\n\t<summary>${issue.fields.summary}</summary>\n</issue>\n\n`,
+                )
+                .join("\n\n"),
+          },
+        ],
+        details: {},
+      };
+    },
+  });
+
   // Register a custom tool
   pi.registerTool({
     name: "tickets_in_current_sprint",
@@ -150,6 +190,7 @@ export default function (pi: ExtensionAPI) {
         body: JSON.stringify(searchParams),
       });
       const data = await response.json();
+
       const issueText =
         "Jira Issues:\n" +
         data.issues
