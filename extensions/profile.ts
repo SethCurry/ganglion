@@ -111,6 +111,8 @@ export default function (pi: ExtensionAPI) {
 
       return { systemPrompt: fullPrompt };
     }
+
+    return { systemPrompt: ctx.systemPrompt };
   });
 
   pi.registerCommand("active-tools", {
@@ -156,14 +158,9 @@ export default function (pi: ExtensionAPI) {
       const parsedProfile = getProfile(profileName);
       activeProfile = parsedProfile;
       const profile = parsedProfile.frontmatter;
+      console.log(profile);
 
       const messages: string[] = [];
-
-      if (parsedProfile.content && parsedProfile.content.trim() !== "") {
-        await ctx.newSession({
-          parentSession: ctx.sessionManager.getSessionId(),
-        });
-      }
 
       if (profile.model) {
         const allModels = ctx.modelRegistry.getAll();
