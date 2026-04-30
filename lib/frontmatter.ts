@@ -11,14 +11,21 @@ export interface SplitFrontmatterResult<T> {
 
 export function splitFrontmatter<T>(
   content: string,
+  parser: (content: string) => any,
 ): SplitFrontmatterResult<T> {
   var inFrontmatter = false;
   var frontmatterContent = "";
   var systemPrompt = "";
+  var isFirstLine = true;
 
   for (const line of content.split("\n")) {
     if (line.trim() === "---") {
-      inFrontmatter = !inFrontmatter;
+      if (isFirstLine) {
+        isFirstLine = false;
+        inFrontmatter = !inFrontmatter;
+      } else if (inFrontmatter) {
+        inFrontmatter = false;
+      }
       continue;
     }
     if (inFrontmatter) {
@@ -27,15 +34,32 @@ export function splitFrontmatter<T>(
       systemPrompt += line + "\n";
     }
   }
+
+  var parsedFrontmatter: T = {} as T;
+
+  if (frontmatterContent.trim() !== "") {
+    try {
+      parsedFrontmatter = parser(frontmatterContent) as T;
+    } catch (error) {
+      throw new Error(`Error parsing frontmatter: ${error}`);
+    }
+  }
+
   return {
-    frontmatter: JSON.parse(frontmatterContent) as T,
+    frontmatter: parsedFrontmatter as T,
     content: systemPrompt,
   };
 }
 
 export function parseFrontMatterFromFile<T>(
   filePath: string,
+  parser: (content: string) => any,
 ): SplitFrontmatterResult<T> {
   const content = fs.readFileSync(filePath, "utf8");
-  return splitFrontmatter<T>(content);
+  try {
+    const parsed = splitFrontmatter<T>(content, parser);
+    return parsed;
+  } catch (error) {
+    throw new Error(`Error parsing frontmatter in file ${filePath}: ${error}`);
+  }
 }

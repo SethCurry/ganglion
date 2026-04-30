@@ -3,7 +3,14 @@ import { Type } from "@sinclair/typebox";
 import fs from "fs";
 import { execSync } from "child_process";
 import { config } from "../lib/configuration.ts";
+import { parseFrontMatterFromFile } from "../lib/frontmatter.ts";
+import { findFiles } from "../lib/sfiles.ts";
+import yaml from "yaml";
 
+interface TodoFile {
+  filePath: string;
+  tasks: string[];
+}
 
 export default function (pi: ExtensionAPI) {
   const notesDir = config.obsidian.directory;
@@ -25,7 +32,9 @@ export default function (pi: ExtensionAPI) {
       const exists = fs.existsSync(journalFile);
       if (!exists) {
         return {
-          content: [{ type: "text", text: "No journal entry found for today." }],
+          content: [
+            { type: "text", text: "No journal entry found for today." },
+          ],
           details: {},
         };
       }
@@ -47,45 +56,48 @@ export default function (pi: ExtensionAPI) {
     parameters: Type.Object({}),
     async execute(toolCallId, params, signal, onUpdate, ctx) {
       let todoOutput: string;
-      try {
-        const cmdResult = execSync(`rg -i "\\\\- \\\\[ \\\\]\\\\s*"`, {
-          cwd: notesDir,
-        });
-        todoOutput = cmdResult.toString();
-      } catch (error) {
-        console.error(error);
-        return {
-          content: [{ type: "text", text: "Error getting todo items." }],
-          details: {},
-        };
+
+      const todoItems: TodoFile[] = [];
+
+      for await (const filePath of findFiles(notesDir, (filePath) =>
+        filePath.endsWith(".md"),
+      )) {
+        const tasks: string[] = [];
+        const fileFrontmatter = parseFrontMatterFromFile(filePath, yaml.parse);
+        const fileContent = fileFrontmatter.content;
+
+        for (const line of fileContent.split("\n")) {
+          if (line.trim() === "") continue;
+          if (line.trim().startsWith("- [ ] ")) {
+            tasks.push(line.trim().replace("- [ ] ", ""));
+          }
+        }
+
+        if (tasks.length > 0) {
+          todoItems.push({
+            filePath,
+            tasks,
+          });
+        }
       }
 
-      const todoItems: string[] = [];
-
-      const todoLines = todoOutput
-        .split("\n")
-        .filter((line) => line.trim() !== "");
-
-      todoLines.forEach((line) => {
-        const todoItem = JSON.parse(line) as {
-          type: string;
-          data: {
-            path: {
-              text: string;
-            };
-            lines: {
-              text: string;
-            };
-          };
-        };
-
-        if (todoItem.type === "match") {
-          todoItems.push(todoItem.data.lines.text.replace("- [ ] ", ""));
-        }
-      });
+      const todoItemsText = todoItems
+        .map((todoItem) => {
+          var text = `### ${todoItem.filePath}\n`;
+          for (const task of todoItem.tasks) {
+            text += `- ${task}\n`;
+          }
+          return text;
+        })
+        .join("\n\n");
 
       return {
-        content: [{ type: "text", text: "Todo Items:\n\n" + todoItems }],
+        content: [
+          {
+            type: "text",
+            text: "Found Todo Items:\n\n" + todoItemsText,
+          },
+        ],
         details: {},
       };
     },

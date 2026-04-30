@@ -65,7 +65,7 @@ function getModelProvider(modelId: string) {
 function getProfile(name: string) {
   const profileDir = getProfileDirectory();
   const profileFile = profileDir + "/" + name + ".md";
-  const profile = parseFrontMatterFromFile<Profile>(profileFile);
+  const profile = parseFrontMatterFromFile<Profile>(profileFile, JSON.parse);
   return profile;
 }
 
